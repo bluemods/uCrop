@@ -211,10 +211,20 @@ public class BitmapLoadTask extends AsyncTask<Void, Void, BitmapLoadTask.BitmapW
         Sink sink = null;
         Response response = null;
         try {
-            Request request = new Request.Builder()
-                .url(inputUri.toString())
-                .build();
-            response = client.newCall(request).execute();
+            // Cloudflare is blocking some okhttp UAs with error 1020
+            // Instead, use the Android user-agent that is different across many devices
+            // And/or recognized by Cloudflare, and less likely to be blocked.
+            String ua = System.getProperty("http.agent");
+
+            Request.Builder builder = new Request.Builder()
+                    .get()
+                    .url(inputUri.toString());
+
+            if (ua != null) {
+                builder.addHeader("User-Agent", ua);
+            }
+
+            response = client.newCall(builder.build()).execute();
             source = response.body().source();
 
             OutputStream outputStream = mContext.getContentResolver().openOutputStream(outputUri);
